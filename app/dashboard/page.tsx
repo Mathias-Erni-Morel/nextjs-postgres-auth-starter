@@ -1,5 +1,5 @@
 // app/dashboard/page.tsx
-import { getServerSession } from "next-auth";
+import getServerSession from "next-auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
