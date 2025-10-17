@@ -1,10 +1,10 @@
 // app/dashboard/page.tsx
-import getServerSession from "next-auth";
+import { auth } from "next-auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   // Auth-Check (geschützte Seite)
-  const session = await getServerSession();
+  const session = await auth();
   if (!session) {
     redirect("/api/auth/signin");
   }
