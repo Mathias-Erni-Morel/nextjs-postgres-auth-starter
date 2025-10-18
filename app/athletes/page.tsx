@@ -1,38 +1,21 @@
 // app/athletes/page.tsx
-import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabaseClient";
+import Link from "next/link";
 
-type AthleteRow = {
-  id: string;
-  vorname: string | null;
-  nachname: string | null;
-  sportart: string | null;
-  verein: string | null;
-  pipeline_stage: string | null;
-  score: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-  alter: number | null; // aus View
-  u18: boolean | null;  // aus View
-};
+export const revalidate = 0;
 
 export default async function AthletesPage() {
   const supabase = getSupabaseServer();
-
-  // Aus der View lesen, damit "alter" und "u18" vorhanden sind
-  const { data, error } = await supabase
+  const { data: athletes, error } = await supabase
     .from("athletes_with_alter")
-    .select(
-      "id, vorname, nachname, sportart, verein, pipeline_stage, score, created_at, updated_at, alter, u18"
-    )
-    .order("updated_at", { ascending: false });
+    .select("*")
+    .order("erstellt", { ascending: false });
 
   if (error) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-2">Athleten – Kontakte</h1>
-        <p className="text-red-600">Fehler beim Laden: {error.message}</p>
-        <div className="mt-4">
+      <div className="p-4 text-red-600">
+        Fehler beim Laden: {error.message}
+        <div>
           <Link href="/dashboard" className="text-blue-600 underline">
             ← Zurück zum Dashboard
           </Link>
@@ -41,76 +24,76 @@ export default async function AthletesPage() {
     );
   }
 
-  const rows: AthleteRow[] = data ?? [];
-
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold">Athleten – Kontakte</h1>
-      <div className="mt-2">
-        <Link href="/dashboard" className="text-blue-600 underline">
-          ← Zurück zum Dashboard
-        </Link>
-      </div>
+      <h1 className="text-2xl font-bold mb-4">Athleten – Kontakte</h1>
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-lg">
-          <thead className="bg-gray-50">
-            <tr className="text-left text-sm text-gray-700">
-              <th className="px-3 py-2 border-b">Name</th>
-              <th className="px-3 py-2 border-b">Sportart</th>
-              <th className="px-3 py-2 border-b">Verein</th>
-              <th className="px-3 py-2 border-b">Pipeline</th>
-              <th className="px-3 py-2 border-b">Score</th>
-              <th className="px-3 py-2 border-b">Alter</th>
-              <th className="px-3 py-2 border-b">Erstellt</th>
-              <th className="px-3 py-2 border-b">Aktualisiert</th>
+      <Link href="/dashboard" className="text-blue-600 underline">
+        ← Zurück zum Dashboard
+      </Link>
+
+      <table className="min-w-full mt-4 border border-gray-300 text-sm">
+        <thead>
+          <tr className="bg-gray-100 text-left">
+            <th className="p-2 border">Vorname</th>
+            <th className="p-2 border">Nachname</th>
+            <th className="p-2 border">Sportart</th>
+            <th className="p-2 border">Verein</th>
+            <th className="p-2 border">Pipeline</th>
+            <th className="p-2 border">Score</th>
+            <th className="p-2 border">Geburtsdatum</th>
+            <th className="p-2 border">Alter</th>
+            <th className="p-2 border">Erstellt</th>
+            <th className="p-2 border">Aktualisiert</th>
+          </tr>
+        </thead>
+        <tbody>
+          {athletes && athletes.length > 0 ? (
+            athletes.map((a) => {
+              const alter = a.alter ?? "–";
+              const minderjaehrig =
+                typeof alter === "number" && alter < 18 ? true : false;
+              return (
+                <tr key={a.id}>
+                  <td className="p-2 border">{a.vorname}</td>
+                  <td className="p-2 border">{a.nachname}</td>
+                  <td className="p-2 border">{a.sportart}</td>
+                  <td className="p-2 border">{a.verein}</td>
+                  <td className="p-2 border">{a.pipeline}</td>
+                  <td className="p-2 border">{a.score}</td>
+                  <td className="p-2 border">
+                    {a.geburtsdatum
+                      ? new Date(a.geburtsdatum).toLocaleDateString("de-CH")
+                      : "–"}
+                  </td>
+                  <td
+                    className={`p-2 border ${
+                      minderjaehrig ? "text-red-600 font-bold" : ""
+                    }`}
+                  >
+                    {alter}
+                    {minderjaehrig && " 🔞"}
+                  </td>
+                  <td className="p-2 border">
+                    {new Date(a.erstellt).toLocaleDateString("de-CH")}
+                  </td>
+                  <td className="p-2 border">
+                    {new Date(a.aktualisiert).toLocaleDateString("de-CH")}
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td colSpan={10} className="p-4 text-center text-gray-500">
+                Noch keine Einträge vorhanden.
+                <br />
+                Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td className="px-3 py-3 text-gray-500" colSpan={8}>
-                  Noch keine Einträge vorhanden.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => {
-                const name =
-                  [r.vorname, r.nachname].filter(Boolean).join(" ") || "—";
-                const alterText =
-                  typeof r.alter === "number" ? `${r.alter}` : "—";
-                return (
-                  <tr key={r.id} className="text-sm">
-                    <td className="px-3 py-2 border-b">{name}</td>
-                    <td className="px-3 py-2 border-b">{r.sportart ?? "—"}</td>
-                    <td className="px-3 py-2 border-b">{r.verein ?? "—"}</td>
-                    <td className="px-3 py-2 border-b">{r.pipeline_stage ?? "—"}</td>
-                    <td className="px-3 py-2 border-b">{r.score ?? 0}</td>
-                    <td className="px-3 py-2 border-b">
-                      <span className="mr-2">{alterText}</span>
-                      {r.u18 ? (
-                        <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300 align-middle">
-                          U18
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2 border-b">
-                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-3 py-2 border-b">
-                      {r.updated_at ? new Date(r.updated_at).toLocaleDateString() : "—"}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="text-xs text-gray-500 mt-3">
-        Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
-      </p>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
