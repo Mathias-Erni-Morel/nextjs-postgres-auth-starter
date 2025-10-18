@@ -1,7 +1,9 @@
 // app/protected/page.tsx
-import { redirect } from "next/navigation";
-
-export default function ProtectedPage() {
-  redirect("/dashboard");
-  return null;
+export default function ProtectedTestPage() {
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>Protected – Test-Render OK</h1>
+      <p>Wenn du diesen Text siehst, rendert die Route /protected korrekt.</p>
+    </main>
+  );
 }
