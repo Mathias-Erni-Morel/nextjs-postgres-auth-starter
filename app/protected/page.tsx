@@ -1,6 +1,6 @@
 // app/protected/page.tsx
 import { redirect } from "next/navigation";
 
-export default function ProtectedAlias() {
+export default function Page() {
   redirect("/dashboard");
 }
