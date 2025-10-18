@@ -2,20 +2,42 @@
 import { getSupabaseServer } from "@/lib/supabaseClient";
 import Link from "next/link";
 
-export const revalidate = 0;
+type Row = {
+  id: string;
+  vorname: string | null;
+  nachname: string | null;
+  sportart: string | null;
+  verein: string | null;
+  pipeline: string | null;
+  score: number | null;
+  geburtsdatum: string | null; // ISO-Date (Rohwert, kann null sein)
+  geburtsdatum_formatiert: string | null; // "DD.MM.YYYY"
+  alter: number | null; // z.B. 17
+  u18: boolean | null; // true/false/null
+  erstellt: string | null; // timestamptz
+  aktualisiert: string | null; // timestamptz
+};
+
+export const dynamic = "force-dynamic";
 
 export default async function AthletesPage() {
   const supabase = getSupabaseServer();
-  const { data: athletes, error } = await supabase
+
+  const { data, error } = await supabase
     .from("athletes_with_alter")
-    .select("*")
-    .order("erstellt", { ascending: false });
+    .select(
+      "id, vorname, nachname, sportart, verein, pipeline, score, geburtsdatum, geburtsdatum_formatiert, alter, u18, erstellt, aktualisiert"
+    )
+    .order("aktualisiert", { ascending: false });
 
   if (error) {
     return (
-      <div className="p-4 text-red-600">
-        Fehler beim Laden: {error.message}
-        <div>
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold">Athleten – Kontakte</h1>
+        <p className="text-red-600 mt-4">
+          Fehler beim Laden: {error.message}
+        </p>
+        <div className="mt-6">
           <Link href="/dashboard" className="text-blue-600 underline">
             ← Zurück zum Dashboard
           </Link>
@@ -24,76 +46,86 @@ export default async function AthletesPage() {
     );
   }
 
+  const rows = (data ?? []) as Row[];
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Athleten – Kontakte</h1>
+      <h1 className="text-2xl font-semibold mb-4">Athleten – Kontakte</h1>
 
-      <Link href="/dashboard" className="text-blue-600 underline">
-        ← Zurück zum Dashboard
-      </Link>
+      <div className="mb-4">
+        <Link href="/dashboard" className="text-blue-600 underline">
+          ← Zurück zum Dashboard
+        </Link>
+      </div>
 
-      <table className="min-w-full mt-4 border border-gray-300 text-sm">
-        <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="p-2 border">Vorname</th>
-            <th className="p-2 border">Nachname</th>
-            <th className="p-2 border">Sportart</th>
-            <th className="p-2 border">Verein</th>
-            <th className="p-2 border">Pipeline</th>
-            <th className="p-2 border">Score</th>
-            <th className="p-2 border">Geburtsdatum</th>
-            <th className="p-2 border">Alter</th>
-            <th className="p-2 border">Erstellt</th>
-            <th className="p-2 border">Aktualisiert</th>
-          </tr>
-        </thead>
-        <tbody>
-          {athletes && athletes.length > 0 ? (
-            athletes.map((a) => {
-              const alter = a.alter ?? "–";
-              const minderjaehrig =
-                typeof alter === "number" && alter < 18 ? true : false;
-              return (
-                <tr key={a.id}>
-                  <td className="p-2 border">{a.vorname}</td>
-                  <td className="p-2 border">{a.nachname}</td>
-                  <td className="p-2 border">{a.sportart}</td>
-                  <td className="p-2 border">{a.verein}</td>
-                  <td className="p-2 border">{a.pipeline}</td>
-                  <td className="p-2 border">{a.score}</td>
-                  <td className="p-2 border">
-                    {a.geburtsdatum
-                      ? new Date(a.geburtsdatum).toLocaleDateString("de-CH")
-                      : "–"}
-                  </td>
-                  <td
-                    className={`p-2 border ${
-                      minderjaehrig ? "text-red-600 font-bold" : ""
-                    }`}
-                  >
-                    {alter}
-                    {minderjaehrig && " 🔞"}
-                  </td>
-                  <td className="p-2 border">
-                    {new Date(a.erstellt).toLocaleDateString("de-CH")}
-                  </td>
-                  <td className="p-2 border">
-                    {new Date(a.aktualisiert).toLocaleDateString("de-CH")}
-                  </td>
-                </tr>
-              );
-            })
-          ) : (
+      <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
             <tr>
-              <td colSpan={10} className="p-4 text-center text-gray-500">
-                Noch keine Einträge vorhanden.
-                <br />
-                Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
-              </td>
+              <th className="px-3 py-2 text-left">Name</th>
+              <th className="px-3 py-2 text-left">Sportart</th>
+              <th className="px-3 py-2 text-left">Verein</th>
+              <th className="px-3 py-2 text-left">Pipeline</th>
+              <th className="px-3 py-2 text-left">Score</th>
+              <th className="px-3 py-2 text-left">Geburtsdatum</th>
+              <th className="px-3 py-2 text-left">Alter</th>
+              <th className="px-3 py-2 text-left">Erstellt</th>
+              <th className="px-3 py-2 text-left">Aktualisiert</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td className="px-3 py-3 text-gray-500" colSpan={9}>
+                  Noch keine Einträge vorhanden.
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => {
+                const name = [r.vorname, r.nachname].filter(Boolean).join(" ");
+                const altText =
+                  r.alter === null || r.alter === undefined ? "—" : `${r.alter}`;
+                const datumText = r.geburtsdatum_formatiert ?? "—";
+
+                return (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-3 py-2">{name || "—"}</td>
+                    <td className="px-3 py-2">{r.sportart ?? "—"}</td>
+                    <td className="px-3 py-2">{r.verein ?? "—"}</td>
+                    <td className="px-3 py-2">{r.pipeline ?? "—"}</td>
+                    <td className="px-3 py-2">{r.score ?? 0}</td>
+                    <td className="px-3 py-2">{datumText}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span>{altText}</span>
+                        {r.u18 === true && (
+                          <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
+                            U18
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      {r.erstellt
+                        ? new Date(r.erstellt).toLocaleDateString("de-CH")
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      {r.aktualisiert
+                        ? new Date(r.aktualisiert).toLocaleDateString("de-CH")
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-gray-500 mt-4">
+        Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
+      </p>
     </div>
   );
 }
