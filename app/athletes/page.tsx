@@ -1,113 +1,108 @@
 // app/athletes/page.tsx
-import { getSupabaseServer } from "@/lib/supabaseClient";
 import Link from "next/link";
+import { getSupabaseServer } from "@/lib/supabaseClient";
 
-type Athlete = {
+type AthleteRow = {
   id: string;
   vorname: string;
   nachname: string;
   sportart: string | null;
   verein: string | null;
-  pipeline_stage: string | null;
+  pipeline_stage: string;
   score: number | null;
-  geburtsjahr: number | null;
+  alter: number | null;
+  ist_minderjaehrig: boolean | null;
   created_at: string;
   updated_at: string;
 };
 
+export const revalidate = 0; // immer frisch laden
+
 export default async function AthletesPage() {
   const supabase = getSupabaseServer();
+
+  // WICHTIG: aus der View athletes_with_alter lesen (liefert alter + ist_minderjaehrig)
   const { data, error } = await supabase
-    .from("athletes")
+    .from("athletes_with_alter")
     .select(
-      "id, vorname, nachname, sportart, verein, pipeline_stage, score, geburtsjahr, created_at, updated_at"
+      "id, vorname, nachname, sportart, verein, pipeline_stage, score, alter, ist_minderjaehrig, created_at, updated_at"
     )
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
 
   if (error) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-4">Athleten – Kontakte</h1>
-        <Link href="/dashboard" className="text-blue-600">
-          &larr; Zurück zum Dashboard
+        <h1 className="text-2xl font-semibold mb-2">Athleten – Kontakte</h1>
+        <p className="text-red-600 mb-4">Fehler beim Laden: {error.message}</p>
+        <Link href="/dashboard" className="text-blue-600 underline">
+          ← Zurück zum Dashboard
         </Link>
-        <p className="mt-6 text-red-600">Fehler beim Laden: {error.message}</p>
       </div>
     );
   }
 
-  const rows: Athlete[] = data ?? [];
-  const currentYear = new Date().getFullYear();
+  const rows: AthleteRow[] = data ?? [];
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Athleten – Kontakte</h1>
-      <Link href="/dashboard" className="text-blue-600">
-        &larr; Zurück zum Dashboard
+    <div className="p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">Athleten – Kontakte</h1>
+      <Link href="/dashboard" className="text-blue-600 underline">
+        ← Zurück zum Dashboard
       </Link>
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full text-sm border">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-left">
             <tr>
-              <th className="px-3 py-2 text-left">Name</th>
-              <th className="px-3 py-2 text-left">Sportart</th>
-              <th className="px-3 py-2 text-left">Verein</th>
-              <th className="px-3 py-2 text-left">Pipeline</th>
-              <th className="px-3 py-2 text-left">Score</th>
-              <th className="px-3 py-2 text-left">Alter</th>
-              <th className="px-3 py-2 text-left">Erstellt</th>
-              <th className="px-3 py-2 text-left">Aktualisiert</th>
+              <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Sportart</th>
+              <th className="px-4 py-2">Verein</th>
+              <th className="px-4 py-2">Pipeline</th>
+              <th className="px-4 py-2">Score</th>
+              <th className="px-4 py-2">Alter</th>
+              <th className="px-4 py-2">Erstellt</th>
+              <th className="px-4 py-2">Aktualisiert</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
+                <td className="px-4 py-6 text-gray-500" colSpan={8}>
                   Noch keine Einträge vorhanden.
                 </td>
               </tr>
             ) : (
-              rows.map((a) => {
-                const age = a.geburtsjahr ? currentYear - a.geburtsjahr : null;
-                return (
-                  <tr key={a.id} className="border-t">
-                    <td className="px-3 py-2">
-                      {a.vorname} {a.nachname}
-                    </td>
-                    <td className="px-3 py-2">{a.sportart ?? "—"}</td>
-                    <td className="px-3 py-2">{a.verein ?? "—"}</td>
-                    <td className="px-3 py-2">{a.pipeline_stage ?? "—"}</td>
-                    <td className="px-3 py-2">{a.score ?? 0}</td>
-                    <td className="px-3 py-2">
-                      {age === null ? (
-                        "—"
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span>{age}</span>
-                          {age < 18 && (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                              U18
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {new Date(a.created_at).toLocaleDateString("de-CH")}
-                    </td>
-                    <td className="px-3 py-2">
-                      {new Date(a.updated_at).toLocaleDateString("de-CH")}
-                    </td>
-                  </tr>
-                );
-              })
+              rows.map((a) => (
+                <tr key={a.id} className="border-t">
+                  <td className="px-4 py-2">
+                    {a.vorname} {a.nachname}
+                  </td>
+                  <td className="px-4 py-2">{a.sportart ?? "—"}</td>
+                  <td className="px-4 py-2">{a.verein ?? "—"}</td>
+                  <td className="px-4 py-2">{a.pipeline_stage}</td>
+                  <td className="px-4 py-2">{a.score ?? 0}</td>
+                  <td className="px-4 py-2">
+                    {a.alter ?? "—"}
+                    {a.ist_minderjaehrig ? (
+                      <span className="ml-2 inline-block rounded-full bg-yellow-100 text-yellow-800 px-2 py-0.5 text-xs font-medium align-middle">
+                        U18
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-2">
+                    {new Date(a.created_at).toLocaleDateString("de-CH")}
+                  </td>
+                  <td className="px-4 py-2">
+                    {new Date(a.updated_at).toLocaleDateString("de-CH")}
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
 
-      <p className="mt-4 text-xs text-gray-500">
+      <p className="text-xs text-gray-500">
         Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
       </p>
     </div>
