@@ -1,9 +1,11 @@
-import NextAuth from 'next-auth';
-import { authConfig } from 'app/auth.config';
-
-export default NextAuth(authConfig).auth;
+// middleware.ts — nur noch für /protected aktiv, ohne Redirect-Logik
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export const config = {
-  // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
-  matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
+  matcher: ["/protected"], // Middleware gilt NUR für /protected
 };
+
+export default function middleware(_req: NextRequest) {
+  return NextResponse.next(); // keine Umleitung
+}
