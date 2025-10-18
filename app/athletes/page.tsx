@@ -8,7 +8,7 @@ type Athlete = {
   nachname: string;
   sportart: string | null;
   verein: string | null;
-  pipeline_stage: string;
+  pipeline_stage: string | null;
   score: number | null;
   geburtsjahr: number | null;
   created_at: string;
@@ -17,91 +17,80 @@ type Athlete = {
 
 export default async function AthletesPage() {
   const supabase = getSupabaseServer();
-
   const { data, error } = await supabase
     .from("athletes")
     .select(
       "id, vorname, nachname, sportart, verein, pipeline_stage, score, geburtsjahr, created_at, updated_at"
     )
-    .order("updated_at", { ascending: false })
-    .limit(200);
+    .order("created_at", { ascending: false });
 
   if (error) {
     return (
       <div className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Athleten – Kontakte</h1>
-        <p className="text-red-600">Fehler beim Laden: {error.message}</p>
-        <div className="mt-4">
-          <Link href="/dashboard" className="text-blue-600 underline">
-            ← Zurück zum Dashboard
-          </Link>
-        </div>
+        <h1 className="text-2xl font-semibold mb-4">Athleten – Kontakte</h1>
+        <Link href="/dashboard" className="text-blue-600">
+          &larr; Zurück zum Dashboard
+        </Link>
+        <p className="mt-6 text-red-600">Fehler beim Laden: {error.message}</p>
       </div>
     );
   }
 
-  const rows = (data ?? []) as Athlete[];
+  const rows: Athlete[] = data ?? [];
   const currentYear = new Date().getFullYear();
 
   return (
     <div className="p-6">
-      <div className="mb-4">
-        <Link href="/dashboard" className="text-blue-600 underline">
-          ← Zurück zum Dashboard
-        </Link>
-      </div>
+      <h1 className="text-2xl font-semibold mb-4">Athleten – Kontakte</h1>
+      <Link href="/dashboard" className="text-blue-600">
+        &larr; Zurück zum Dashboard
+      </Link>
 
-      <h1 className="text-xl font-semibold mb-4">Athleten – Kontakte</h1>
-
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-gray-700">
+      <div className="mt-6 overflow-x-auto">
+        <table className="min-w-full text-sm border">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-2 text-left font-medium">Name</th>
-              <th className="px-3 py-2 text-left font-medium">Sportart</th>
-              <th className="px-3 py-2 text-left font-medium">Verein</th>
-              <th className="px-3 py-2 text-left font-medium">Pipeline</th>
-              <th className="px-3 py-2 text-left font-medium">Score</th>
-              <th className="px-3 py-2 text-left font-medium">Alter</th>
-              <th className="px-3 py-2 text-left font-medium">Erstellt</th>
-              <th className="px-3 py-2 text-left font-medium">Aktualisiert</th>
+              <th className="px-3 py-2 text-left">Name</th>
+              <th className="px-3 py-2 text-left">Sportart</th>
+              <th className="px-3 py-2 text-left">Verein</th>
+              <th className="px-3 py-2 text-left">Pipeline</th>
+              <th className="px-3 py-2 text-left">Score</th>
+              <th className="px-3 py-2 text-left">Alter</th>
+              <th className="px-3 py-2 text-left">Erstellt</th>
+              <th className="px-3 py-2 text-left">Aktualisiert</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-gray-500" colSpan={8}>
+                <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
                   Noch keine Einträge vorhanden.
                 </td>
               </tr>
             ) : (
               rows.map((a) => {
-                const age =
-                  typeof a.geburtsjahr === "number"
-                    ? currentYear - a.geburtsjahr
-                    : null;
-
+                const age = a.geburtsjahr ? currentYear - a.geburtsjahr : null;
                 return (
                   <tr key={a.id} className="border-t">
                     <td className="px-3 py-2">
                       {a.vorname} {a.nachname}
                     </td>
-                    <td className="px-3 py-2">{a.sportart ?? "–"}</td>
-                    <td className="px-3 py-2">{a.verein ?? "–"}</td>
-                    <td className="px-3 py-2">{a.pipeline_stage}</td>
+                    <td className="px-3 py-2">{a.sportart ?? "—"}</td>
+                    <td className="px-3 py-2">{a.verein ?? "—"}</td>
+                    <td className="px-3 py-2">{a.pipeline_stage ?? "—"}</td>
                     <td className="px-3 py-2">{a.score ?? 0}</td>
                     <td className="px-3 py-2">
-                      {age !== null ? (
-                        <span className="inline-flex items-center gap-2">
+                      {age === null ? (
+                        "—"
+                      ) : (
+                        <div className="flex items-center gap-2">
                           <span>{age}</span>
                           {age < 18 && (
-                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
                               U18
                             </span>
                           )}
-                        </span>
-                      ) : (
-                        "–"
+                        </div>
                       )}
                     </td>
                     <td className="px-3 py-2">
@@ -118,7 +107,7 @@ export default async function AthletesPage() {
         </table>
       </div>
 
-      <p className="text-gray-500 mt-3">
+      <p className="mt-4 text-xs text-gray-500">
         Read-only Ansicht. Bearbeiten/Neuanlage folgt im nächsten Schritt.
       </p>
     </div>
